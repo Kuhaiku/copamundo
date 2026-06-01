@@ -45,7 +45,34 @@ app.post('/api/products', async (req, res) => {
         res.status(500).json({ error: 'Erro ao cadastrar produto' });
     }
 });
+// Atualizar produto
+app.put('/api/products/:id', async (req, res) => {
+    const { id } = req.params;
+    const { name, description, price, imageUrl, downloadLink } = req.body;
+    try {
+        const product = await prisma.product.update({
+            where: { id },
+            data: { name, description, price: parseFloat(price), imageUrl, downloadLink }
+        });
+        res.json(product);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao atualizar produto' });
+    }
+});
 
+// Deletar produto
+app.delete('/api/products/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Primeiro remove as referências de itens de pedido para evitar erro de chave estrangeira
+        await prisma.orderItem.deleteMany({ where: { productId: id } });
+        // Depois deleta o produto
+        await prisma.product.delete({ where: { id } });
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao deletar produto' });
+    }
+});
 // Criar preferência de checkout (Carrinho)
 app.post('/api/checkout', async (req, res) => {
     const { items } = req.body; // Array de { id, quantity }

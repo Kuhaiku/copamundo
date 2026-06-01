@@ -8,10 +8,11 @@
     <script>tailwind.config = { darkMode: 'class' }</script>
 </head>
 <body class="bg-gray-900 text-gray-100 p-6 font-sans">
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-2xl font-bold mb-6 text-white border-b border-gray-800 pb-2">Cadastro de Novos PDFs</h1>
+    <div class="max-w-5xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6 text-white border-b border-gray-800 pb-2">Gerenciamento de PDFs</h1>
         
         <form id="product-form" class="bg-gray-950 p-6 rounded-lg border border-gray-800 space-y-4 mb-8">
+            <input type="hidden" id="productId">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium mb-1 text-gray-400">Nome do Produto</label>
@@ -34,7 +35,10 @@
                 <label class="block text-sm font-medium mb-1 text-gray-400">Link de Download (Onde o PDF está hospedado)</label>
                 <input type="url" id="downloadLink" required class="w-full bg-gray-900 border border-gray-800 p-2 rounded text-white focus:outline-none focus:border-blue-500">
             </div>
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 py-2.5 rounded font-bold transition">Cadastrar Produto</button>
+            <div class="flex gap-4">
+                <button type="submit" id="submit-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 py-2.5 rounded font-bold transition">Cadastrar Produto</button>
+                <button type="button" id="cancel-btn" onclick="resetForm()" class="hidden bg-gray-700 hover:bg-gray-600 px-6 rounded font-bold transition">Cancelar</button>
+            </div>
         </form>
 
         <h2 class="text-xl font-bold mb-4 text-white">Produtos Cadastrados</h2>
@@ -45,6 +49,7 @@
                         <th class="p-3">Nome</th>
                         <th class="p-3">Preço</th>
                         <th class="p-3">Link de Download</th>
+                        <th class="p-3 text-right">Ações</th>
                     </tr>
                 </thead>
                 <tbody id="products-table-body" class="divide-y divide-gray-800 text-sm"></tbody>
@@ -53,22 +58,69 @@
     </div>
 
     <script>
+        let currentProducts = [];
+
         async function loadTable() {
             const res = await fetch('/api/products');
-            const data = await res.json();
+            currentProducts = await res.json();
             const tbody = document.getElementById('products-table-body');
-            tbody.innerHTML = data.map(p => `
-                <tr>
+            tbody.innerHTML = currentProducts.map(p => `
+                <tr class="hover:bg-gray-900/50 transition">
                     <td class="p-3 font-medium text-white">${p.name}</td>
                     <td class="p-3 text-green-400">R$ ${p.price.toFixed(2)}</td>
                     <td class="p-3 text-gray-400 truncate max-w-xs"><a href="${p.downloadLink}" class="hover:underline text-blue-400" target="_blank">${p.downloadLink}</a></td>
+                    <td class="p-3 text-right space-x-3">
+                        <button onclick="editProduct('${p.id}')" class="text-blue-400 hover:text-blue-300 font-medium">Editar</button>
+                        <button onclick="deleteProduct('${p.id}')" class="text-red-500 hover:text-red-400 font-medium">Deletar</button>
+                    </td>
                 </tr>
             `).join('');
         }
 
+        function editProduct(id) {
+            const product = currentProducts.find(p => p.id === id);
+            if (!product) return;
+
+            document.getElementById('productId').value = product.id;
+            document.getElementById('name').value = product.name;
+            document.getElementById('price').value = product.price;
+            document.getElementById('description').value = product.description;
+            document.getElementById('imageUrl').value = product.imageUrl;
+            document.getElementById('downloadLink').value = product.downloadLink;
+
+            document.getElementById('submit-btn').innerText = "Atualizar Produto";
+            document.getElementById('submit-btn').classList.replace('bg-blue-600', 'bg-green-600');
+            document.getElementById('submit-btn').classList.replace('hover:bg-blue-700', 'hover:bg-green-700');
+            document.getElementById('cancel-btn').classList.remove('hidden');
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function deleteProduct(id) {
+            if (confirm("Tem certeza que deseja deletar este produto?")) {
+                const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadTable();
+                } else {
+                    alert("Erro ao deletar produto.");
+                }
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('product-form').reset();
+            document.getElementById('productId').value = "";
+            document.getElementById('submit-btn').innerText = "Cadastrar Produto";
+            document.getElementById('submit-btn').classList.replace('bg-green-600', 'bg-blue-600');
+            document.getElementById('submit-btn').classList.replace('hover:bg-green-700', 'hover:bg-blue-700');
+            document.getElementById('cancel-btn').classList.add('hidden');
+        }
+
         document.getElementById('product-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const product = {
+            const id = document.getElementById('productId').value;
+            
+            const productData = {
                 name: document.getElementById('name').value,
                 price: document.getElementById('price').value,
                 description: document.getElementById('description').value,
@@ -76,15 +128,20 @@
                 downloadLink: document.getElementById('downloadLink').value,
             };
 
-            const res = await fetch('/api/products', {
-                method: 'POST',
+            const method = id ? 'PUT' : 'POST';
+            const endpoint = id ? `/api/products/${id}` : '/api/products';
+
+            const res = await fetch(endpoint, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(product)
+                body: JSON.stringify(productData)
             });
 
             if (res.ok) {
-                document.getElementById('product-form').reset();
+                resetForm();
                 loadTable();
+            } else {
+                alert("Erro ao salvar produto.");
             }
         });
 
