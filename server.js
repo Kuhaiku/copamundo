@@ -121,6 +121,8 @@ app.post('/api/checkout', async (req, res) => {
     }
 });
 
+// Rota GET apenas para enganar a validação do painel do Mercado Pago
+app.get('/webhook', (req, res) => res.sendStatus(200));
 // Webhook do Mercado Pago
 app.post('/webhook', async (req, res) => {
     res.sendStatus(200);
