@@ -3,119 +3,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loja Digital de PDFs</title>
+    <title>Loja Digital Premium</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config = { darkMode: 'class' }</script>
+    <script>
+        tailwind.config = { 
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        zinc: {
+                            850: '#1f1f22',
+                            950: '#09090b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .cart-open { overflow: hidden; }
+        /* Transição suave para a gaveta do carrinho */
+        #cart-drawer { transition: transform 0.3s ease-in-out; }
+        .translate-x-full { transform: translateX(100%); }
+        .translate-x-0 { transform: translateX(0); }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen font-sans">
-    <nav class="border-b border-gray-800 bg-gray-950 p-4 sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold tracking-wider text-white">PDF STORE</h1>
-            <button onclick="toggleCart()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-medium text-sm transition">
-                Carrinho (<span id="cart-count">0</span>)
+<body class="bg-zinc-950 text-gray-100 min-h-screen flex flex-col antialiased">
+
+    <div id="toast" class="fixed top-20 right-4 bg-green-600 text-white px-6 py-3 rounded shadow-lg transform transition-all duration-300 translate-x-[150%] z-50 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        Produto adicionado ao carrinho!
+    </div>
+
+    <nav class="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-lg border-b border-zinc-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
+                <span class="text-xl font-bold tracking-tight text-white">PDF<span class="text-blue-500">Store</span></span>
+            </div>
+            <button onclick="toggleCart()" class="relative p-2 text-gray-300 hover:text-white transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                <span id="cart-badge" class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-blue-600 rounded-full">0</span>
             </button>
         </div>
     </nav>
 
-    <main class="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6" id="products-grid">
-        </main>
+    <header class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+        <h1 class="text-3xl md:text-5xl font-extrabold text-white mb-4">Arquivos Digitais de Alta Qualidade</h1>
+        <p class="text-zinc-400 text-lg max-w-2xl mx-auto mb-8">Compre com segurança. Receba o acesso ao seu material instantaneamente no e-mail após a aprovação do pagamento.</p>
+        <div class="flex flex-wrap justify-center gap-6 text-sm font-medium text-zinc-500">
+            <span class="flex items-center gap-1"><svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg> Pagamento Seguro</span>
+            <span class="flex items-center gap-1"><svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg> Envio Imediato</span>
+        </div>
+    </header>
 
-    <div id="cart-modal" class="hidden fixed inset-0 bg-black/70 flex justify-end z-50">
-        <div class="w-full max-w-md bg-gray-950 h-full p-6 border-l border-gray-800 flex flex-col justify-between">
-            <div>
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-lg font-bold">Seu Carrinho</h2>
-                    <button onclick="toggleCart()" class="text-gray-400 hover:text-white">Fechar</button>
-                </div>
-                <div id="cart-items" class="space-y-4 overflow-y-auto max-h-[60vh]"></div>
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 w-full">
+        <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="col-span-full text-center text-zinc-500 py-10">Carregando catálogo...</div>
+        </div>
+    </main>
+
+    <footer class="border-t border-zinc-800 py-8 text-center text-zinc-500 text-sm">
+        <p>&copy; 2026. Todos os direitos reservados.</p>
+        <p class="mt-2 text-xs">Transações processadas de forma segura pelo Mercado Pago.</p>
+    </footer>
+
+    <div id="cart-overlay" onclick="toggleCart()" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300"></div>
+
+    <div id="cart-drawer" class="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-zinc-900 shadow-2xl z-50 transform translate-x-full flex flex-col border-l border-zinc-800">
+        <div class="p-6 border-b border-zinc-800 flex justify-between items-center bg-zinc-950">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                Seu Carrinho
+            </h2>
+            <button onclick="toggleCart()" class="text-zinc-400 hover:text-white bg-zinc-800 rounded-full p-1 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <div id="cart-items" class="flex-1 overflow-y-auto p-6 space-y-4">
+            <div class="text-center text-zinc-500 mt-10">Seu carrinho está vazio.</div>
+        </div>
+        
+        <div class="p-6 border-t border-zinc-800 bg-zinc-950">
+            <div class="flex justify-between items-center mb-6">
+                <span class="text-zinc-400 font-medium">Total a pagar</span>
+                <span id="cart-total" class="text-2xl font-bold text-white">R$ 0,00</span>
             </div>
-            <div class="border-t border-gray-800 pt-4">
-                <div class="flex justify-between text-lg font-bold mb-4">
-                    <span>Total:</span>
-                    <span id="cart-total">R$ 0,00</span>
-                </div>
-                <button onclick="checkout()" class="w-full bg-green-600 hover:bg-green-700 py-3 rounded font-bold transition">
-                    Finalizar Compra
-                </button>
-            </div>
+            <button onclick="checkout()" id="checkout-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-emerald-900/20 transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                Finalizar Compra
+            </button>
         </div>
     </div>
 
     <script>
         let cart = [];
         let products = [];
+        let isCartOpen = false;
 
         async function loadProducts() {
-            const res = await fetch('/api/products');
-            products = await res.json();
-            const grid = document.getElementById('products-grid');
-            grid.innerHTML = products.map(p => `
-                <div class="bg-gray-950 border border-gray-800 rounded-lg p-4 flex flex-col justify-between">
-                    <img src="${p.imageUrl}" alt="${p.name}" class="w-full h-48 object-cover rounded mb-4 bg-gray-900">
-                    <div>
-                        <h3 class="text-lg font-bold text-white">${p.name}</h3>
-                        <p class="text-gray-400 text-sm my-2">${p.description}</p>
-                    </div>
-                    <div class="mt-4">
-                        <div class="text-xl font-extrabold text-green-400 mb-3">R$ ${p.price.toFixed(2)}</div>
-                        <button onclick="addToCart('${p.id}')" class="w-full bg-gray-800 hover:bg-gray-700 py-2 rounded text-sm font-medium transition">
-                            Adicionar ao Carrinho
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
+            try {
+                const res = await fetch('/api/products');
+                products = await res.json();
+                const grid = document.getElementById('products-grid');
+                
+                if (products.length === 0) {
+                    grid.innerHTML = '<div class="col-span-full text-center text-zinc-500 py-10">Nenhum produto cadastrado ainda.</div>';
+                    return;
+                }
 
-        function addToCart(id) {
-            if (!cart.includes(id)) {
-                cart.push(id);
-                updateCartUI();
+                grid.innerHTML = products.map(p => `
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden flex flex-col transition duration-300 hover:border-zinc-700 hover:shadow-2xl">
+                        <div class="aspect-[4/3] w-full bg-zinc-950 p-6 flex items-center justify-center relative group">
+                            <img src="${p.imageUrl}" alt="${p.name}" class="max-w-full max-h-full object-contain drop-shadow-2xl transition duration-500 group-hover:scale-105">
+                        </div>
+                        <div class="p-6 flex-1 flex flex-col">
+                            <h3 class="text-lg font-bold text-white mb-2 line-clamp-1">${p.name}</h3>
+                            <p class="text-zinc-400 text-sm mb-6 line-clamp-2">${p.description}</p>
+                            
+                            <div class="mt-auto flex items-center justify-between">
+                                <div class="text-2xl font-black text-emerald-400">R$ ${p.price.toFixed(2).replace('.', ',')}</div>
+                            </div>
+                            <button onclick="addToCart('${p.id}')" class="mt-4 w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-4 rounded-xl transition duration-200 flex justify-center items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                Adicionar
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('products-grid').innerHTML = '<div class="col-span-full text-center text-red-500 py-10">Erro ao carregar os produtos.</div>';
             }
         }
 
-        function removeFromCart(id) {
-            cart = cart.filter(item => item !== id);
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-x-[150%]');
+            toast.classList.add('translate-x-0');
+            setTimeout(() => {
+                toast.classList.remove('translate-x-0');
+                toast.classList.add('translate-x-[150%]');
+            }, 3000);
+        }
+
+        function addToCart(id) {
+            cart.push(id);
+            updateCartUI();
+            showToast();
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
             updateCartUI();
         }
 
         function updateCartUI() {
-            document.getElementById('cart-count').innerText = cart.length;
+            document.getElementById('cart-badge').innerText = cart.length;
             const container = document.getElementById('cart-items');
+            const checkoutBtn = document.getElementById('checkout-btn');
             let total = 0;
 
-            container.innerHTML = cart.map(id => {
-                const p = products.find(prod => prod.id === id);
-                total += p.price;
-                return `
-                    <div class="flex justify-between items-center border-b border-gray-800 pb-2">
-                        <div>
-                            <h4 class="font-bold text-sm">${p.name}</h4>
-                            <span class="text-green-400 text-sm">R$ ${p.price.toFixed(2)}</span>
+            if (cart.length === 0) {
+                container.innerHTML = '<div class="text-center text-zinc-500 mt-10">Seu carrinho está vazio.</div>';
+                checkoutBtn.disabled = true;
+            } else {
+                checkoutBtn.disabled = false;
+                container.innerHTML = cart.map((id, index) => {
+                    const p = products.find(prod => prod.id === id);
+                    if(!p) return '';
+                    total += p.price;
+                    return `
+                        <div class="flex justify-between items-center bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+                            <div class="flex items-center gap-3 overflow-hidden">
+                                <div class="h-12 w-12 bg-zinc-900 rounded border border-zinc-800 flex-shrink-0 p-1">
+                                    <img src="${p.imageUrl}" class="w-full h-full object-contain">
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-sm text-white truncate max-w-[140px] sm:max-w-[180px]">${p.name}</h4>
+                                    <span class="text-emerald-400 text-sm font-semibold">R$ ${p.price.toFixed(2).replace('.', ',')}</span>
+                                </div>
+                            </div>
+                            <button onclick="removeFromCart(${index})" class="text-zinc-500 hover:text-red-500 p-2 transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
                         </div>
-                        <button onclick="removeFromCart('${p.id}')" class="text-red-400 text-xs hover:underline">Remover</button>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
+            }
 
-            document.getElementById('cart-total').innerText = `R$ ${total.toFixed(2)}`;
+            document.getElementById('cart-total').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
         }
 
         function toggleCart() {
-            document.getElementById('cart-modal').classList.toggle('hidden');
+            isCartOpen = !isCartOpen;
+            const drawer = document.getElementById('cart-drawer');
+            const overlay = document.getElementById('cart-overlay');
+            
+            if (isCartOpen) {
+                document.body.classList.add('cart-open');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+                drawer.classList.remove('translate-x-full');
+            } else {
+                document.body.classList.remove('cart-open');
+                overlay.classList.add('opacity-0');
+                drawer.classList.add('translate-x-full');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
         }
 
         async function checkout() {
-            if (cart.length === 0) return alert('Carrinho vazio');
+            if (cart.length === 0) return;
+            
+            const btn = document.getElementById('checkout-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Processando...';
+            btn.disabled = true;
+
             const items = cart.map(id => ({ id, quantity: 1 }));
             
-            const res = await fetch('/api/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items })
-            });
-            const data = await res.json();
-            if (data.init_point) {
-                window.location.href = data.init_point;
+            try {
+                const res = await fetch('/api/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items })
+                });
+                const data = await res.json();
+                if (data.init_point) {
+                    window.location.href = data.init_point;
+                } else {
+                    throw new Error('Erro ao gerar link de pagamento');
+                }
+            } catch (error) {
+                alert('Erro ao processar o checkout. Tente novamente.');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }
         }
 
