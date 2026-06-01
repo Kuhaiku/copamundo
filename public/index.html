@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loja Digital de PDFs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans">
+    <nav class="border-b border-gray-800 bg-gray-950 p-4 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-wider text-white">PDF STORE</h1>
+            <button onclick="toggleCart()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-medium text-sm transition">
+                Carrinho (<span id="cart-count">0</span>)
+            </button>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6" id="products-grid">
+        </main>
+
+    <div id="cart-modal" class="hidden fixed inset-0 bg-black/70 flex justify-end z-50">
+        <div class="w-full max-w-md bg-gray-950 h-full p-6 border-l border-gray-800 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-bold">Seu Carrinho</h2>
+                    <button onclick="toggleCart()" class="text-gray-400 hover:text-white">Fechar</button>
+                </div>
+                <div id="cart-items" class="space-y-4 overflow-y-auto max-h-[60vh]"></div>
+            </div>
+            <div class="border-t border-gray-800 pt-4">
+                <div class="flex justify-between text-lg font-bold mb-4">
+                    <span>Total:</span>
+                    <span id="cart-total">R$ 0,00</span>
+                </div>
+                <button onclick="checkout()" class="w-full bg-green-600 hover:bg-green-700 py-3 rounded font-bold transition">
+                    Finalizar Compra
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cart = [];
+        let products = [];
+
+        async function loadProducts() {
+            const res = await fetch('/api/products');
+            products = await res.json();
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = products.map(p => `
+                <div class="bg-gray-950 border border-gray-800 rounded-lg p-4 flex flex-col justify-between">
+                    <img src="${p.imageUrl}" alt="${p.name}" class="w-full h-48 object-cover rounded mb-4 bg-gray-900">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">${p.name}</h3>
+                        <p class="text-gray-400 text-sm my-2">${p.description}</p>
+                    </div>
+                    <div class="mt-4">
+                        <div class="text-xl font-extrabold text-green-400 mb-3">R$ ${p.price.toFixed(2)}</div>
+                        <button onclick="addToCart('${p.id}')" class="w-full bg-gray-800 hover:bg-gray-700 py-2 rounded text-sm font-medium transition">
+                            Adicionar ao Carrinho
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(id) {
+            if (!cart.includes(id)) {
+                cart.push(id);
+                updateCartUI();
+            }
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(item => item !== id);
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            document.getElementById('cart-count').innerText = cart.length;
+            const container = document.getElementById('cart-items');
+            let total = 0;
+
+            container.innerHTML = cart.map(id => {
+                const p = products.find(prod => prod.id === id);
+                total += p.price;
+                return `
+                    <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+                        <div>
+                            <h4 class="font-bold text-sm">${p.name}</h4>
+                            <span class="text-green-400 text-sm">R$ ${p.price.toFixed(2)}</span>
+                        </div>
+                        <button onclick="removeFromCart('${p.id}')" class="text-red-400 text-xs hover:underline">Remover</button>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('cart-total').innerText = `R$ ${total.toFixed(2)}`;
+        }
+
+        function toggleCart() {
+            document.getElementById('cart-modal').classList.toggle('hidden');
+        }
+
+        async function checkout() {
+            if (cart.length === 0) return alert('Carrinho vazio');
+            const items = cart.map(id => ({ id, quantity: 1 }));
+            
+            const res = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items })
+            });
+            const data = await res.json();
+            if (data.init_point) {
+                window.location.href = data.init_point;
+            }
+        }
+
+        window.onload = loadProducts;
+    </script>
+</body>
+</html>
