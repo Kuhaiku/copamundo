@@ -121,9 +121,6 @@ app.post('/api/checkout', async (req, res) => {
     }
 });
 
-// Rota GET apenas para enganar a validação do painel do Mercado Pago
-app.get('/webhook', (req, res) => res.sendStatus(200));
-// Webhook do Mercado Pago
 // Webhook do Mercado Pago
 app.post('/webhook', async (req, res) => {
     res.sendStatus(200);
@@ -188,9 +185,6 @@ app.post('/webhook', async (req, res) => {
 
 // Rota GET apenas para enganar a validação do painel do Mercado Pago
 app.get('/webhook', (req, res) => res.sendStatus(200));
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor ativo na porta ${PORT}`));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor ativo na porta ${PORT}`));
