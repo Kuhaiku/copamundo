@@ -45,6 +45,7 @@ app.post('/api/products', async (req, res) => {
         res.status(500).json({ error: 'Erro ao cadastrar produto' });
     }
 });
+
 // Atualizar produto
 app.put('/api/products/:id', async (req, res) => {
     const { id } = req.params;
@@ -64,18 +65,17 @@ app.put('/api/products/:id', async (req, res) => {
 app.delete('/api/products/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        // Primeiro remove as referências de itens de pedido para evitar erro de chave estrangeira
         await prisma.orderItem.deleteMany({ where: { productId: id } });
-        // Depois deleta o produto
         await prisma.product.delete({ where: { id } });
         res.status(204).send();
     } catch (error) {
         res.status(500).json({ error: 'Erro ao deletar produto' });
     }
 });
+
 // Criar preferência de checkout (Carrinho)
 app.post('/api/checkout', async (req, res) => {
-    const { items } = req.body; // Array de { id, quantity }
+    const { items, email } = req.body; // Agora recebe o e-mail de garantia
 
     try {
         const productIds = items.map(i => i.id);
@@ -83,10 +83,11 @@ app.post('/api/checkout', async (req, res) => {
             where: { id: { in: productIds } }
         });
 
-        // Cria pedido pendente no banco
+        // Cria pedido pendente no banco e já salva o e-mail
         const order = await prisma.order.create({
             data: {
                 status: 'pending',
+                customerEmail: email,
                 items: {
                     create: dbProducts.map(p => ({ productId: p.id }))
                 }
@@ -121,6 +122,9 @@ app.post('/api/checkout', async (req, res) => {
     }
 });
 
+// Rota GET apenas para enganar a validação do painel do Mercado Pago
+app.get('/webhook', (req, res) => res.sendStatus(200));
+
 // Webhook do Mercado Pago
 app.post('/webhook', async (req, res) => {
     res.sendStatus(200);
@@ -133,28 +137,35 @@ app.post('/webhook', async (req, res) => {
             if (payment.status === 'approved') {
                 const orderId = payment.external_reference;
                 
-                // Tenta buscar o e-mail em diferentes locais do retorno do Mercado Pago
-                const customerEmail = payment.payer?.email || payment.additional_info?.payer?.email || '';
-
                 const order = await prisma.order.findUnique({
                     where: { id: orderId },
                     include: { items: { include: { product: true } } }
                 });
 
                 if (order && order.status !== 'approved') {
-                    // Atualiza status do pedido no banco de dados
+                    // Resgata o e-mail de garantia e o e-mail do Mercado Pago
+                    const emailGarantia = order.customerEmail;
+                    const emailMP = payment.payer?.email || payment.additional_info?.payer?.email || '';
+
+                    // Mescla os e-mails removendo duplicatas
+                    const destinatarios = new Set();
+                    if (emailGarantia && emailGarantia.includes('@')) destinatarios.add(emailGarantia);
+                    if (emailMP && emailMP.includes('@')) destinatarios.add(emailMP);
+
+                    const listaEmails = Array.from(destinatarios).join(', ');
+
+                    // Atualiza status do pedido
                     await prisma.order.update({
                         where: { id: orderId },
                         data: { 
                             status: 'approved', 
                             paymentId: String(data.id), 
-                            customerEmail: customerEmail || 'SEM_EMAIL' 
+                            customerEmail: listaEmails || 'SEM_EMAIL' 
                         }
                     });
 
-                    // Se não encontrou o e-mail de jeito nenhum, aborta o envio e avisa no log
-                    if (!customerEmail || customerEmail === '') {
-                        console.error(`⚠️ Pagamento ${data.id} aprovado, mas o MP não forneceu o e-mail do cliente.`);
+                    if (listaEmails.length === 0) {
+                        console.error(`Pagamento ${data.id} aprovado, mas sem nenhum email vinculado.`);
                         return;
                     }
 
@@ -164,10 +175,9 @@ app.post('/webhook', async (req, res) => {
                         linksHtml += `<li><strong>${item.product.name}</strong>: <a href="${item.product.downloadLink}">Clique aqui para baixar</a></li>`;
                     });
 
-                    // Dispara o e-mail
                     await transporter.sendMail({
                         from: process.env.EMAIL_USER,
-                        to: customerEmail,
+                        to: listaEmails, // Dispara para todos os e-mails encontrados
                         subject: 'Seus PDFs comprados chegaram!',
                         html: `
                             <h3>Obrigado pela sua compra!</h3>
@@ -182,9 +192,6 @@ app.post('/webhook', async (req, res) => {
         }
     }
 });
-
-// Rota GET apenas para enganar a validação do painel do Mercado Pago
-app.get('/webhook', (req, res) => res.sendStatus(200));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor ativo na porta ${PORT}`));

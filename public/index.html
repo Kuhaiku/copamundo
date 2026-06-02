@@ -24,7 +24,6 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .cart-open { overflow: hidden; }
-        /* Transição suave para a gaveta do carrinho */
         #cart-drawer { transition: transform 0.3s ease-in-out; }
         .translate-x-full { transform: translateX(100%); }
         .translate-x-0 { transform: translateX(0); }
@@ -92,10 +91,29 @@
                 <span class="text-zinc-400 font-medium">Total a pagar</span>
                 <span id="cart-total" class="text-2xl font-bold text-white">R$ 0,00</span>
             </div>
-            <button onclick="checkout()" id="checkout-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-emerald-900/20 transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onclick="abrirModalEmail()" id="checkout-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-emerald-900/20 transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                Finalizar Compra
+                Avançar
             </button>
+        </div>
+    </div>
+
+    <div id="email-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+        <div class="bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl max-w-md w-full p-6 transform scale-95 transition-transform duration-300" id="email-modal-content">
+            <h3 class="text-xl font-bold text-white mb-2">Onde deseja receber?</h3>
+            <p class="text-zinc-400 text-sm mb-4">Digite o e-mail no qual enviaremos os arquivos após a aprovação do pagamento.</p>
+            
+            <input type="email" id="buyer-email" placeholder="seu@email.com" required class="w-full bg-zinc-900 border border-zinc-800 p-3 rounded-xl text-white focus:outline-none focus:border-emerald-500 mb-4 transition">
+            
+            <div class="bg-blue-900/20 border border-blue-900/50 rounded-lg p-3 mb-6 text-xs text-blue-300 leading-relaxed">
+                <strong class="block mb-1 text-blue-400">Atenção sobre pagamentos via Pix:</strong>
+                O redirecionamento automático pode não ocorrer no Pix. Após efetuar o pagamento, basta fechar a tela e checar o seu e-mail. Caso não receba ou tenha dúvidas, <a href="https://wa.me/5522992575773" target="_blank" class="underline font-semibold hover:text-white transition">fale conosco no WhatsApp</a>.
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="fecharModalEmail()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold py-3 rounded-xl transition">Cancelar</button>
+                <button onclick="processarCompra()" id="confirm-buy-btn" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition flex justify-center items-center gap-2">Pagamento</button>
+            </div>
         </div>
     </div>
 
@@ -215,12 +233,38 @@
             }
         }
 
-        async function checkout() {
+        function abrirModalEmail() {
             if (cart.length === 0) return;
+            const modal = document.getElementById('email-modal');
+            const content = document.getElementById('email-modal-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function fecharModalEmail() {
+            const modal = document.getElementById('email-modal');
+            const content = document.getElementById('email-modal-content');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        async function processarCompra() {
+            const emailInput = document.getElementById('buyer-email').value;
             
-            const btn = document.getElementById('checkout-btn');
+            if (!emailInput || !emailInput.includes('@')) {
+                alert('Por favor, insira um e-mail válido para receber os PDFs.');
+                return;
+            }
+
+            const btn = document.getElementById('confirm-buy-btn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = 'Processando...';
+            btn.innerHTML = 'Gerando link...';
             btn.disabled = true;
 
             const items = cart.map(id => ({ id, quantity: 1 }));
@@ -229,7 +273,7 @@
                 const res = await fetch('/api/checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ items })
+                    body: JSON.stringify({ items: items, email: emailInput })
                 });
                 const data = await res.json();
                 if (data.init_point) {
