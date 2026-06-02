@@ -3,80 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Cadastro</title>
+    <title>Painel Administrativo</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config = { darkMode: 'class' }</script>
+    <script>
+        tailwind.config = { 
+            darkMode: 'class',
+            theme: { extend: { colors: { zinc: { 850: '#1f1f22', 950: '#09090b' } } } }
+        }
+    </script>
 </head>
-<body class="bg-gray-900 text-gray-100 p-6 font-sans">
+<body class="bg-zinc-950 text-gray-100 p-6 font-sans hidden" id="main-content">
+    
     <div class="max-w-5xl mx-auto">
-        <h1 class="text-2xl font-bold mb-6 text-white border-b border-gray-800 pb-2">Gerenciamento de PDFs</h1>
         
-        <form id="product-form" class="bg-gray-950 p-6 rounded-lg border border-gray-800 space-y-4 mb-8">
+        <div class="flex justify-between items-center mb-6 border-b border-zinc-800 pb-4">
+            <h1 class="text-2xl font-bold text-white">Painel Administrativo</h1>
+            <button onclick="sair()" class="bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white px-4 py-2 rounded-lg font-semibold transition">Sair</button>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 text-white">Cadastro de Produtos</h2>
+        <form id="product-form" class="bg-zinc-900 p-6 rounded-xl border border-zinc-800 space-y-4 mb-12 shadow-lg">
             <input type="hidden" id="productId">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium mb-1 text-gray-400">Nome do Produto</label>
-                    <input type="text" id="name" required class="w-full bg-gray-900 border border-gray-800 p-2 rounded text-white focus:outline-none focus:border-blue-500">
+                    <label class="block text-sm font-medium mb-1 text-zinc-400">Nome do Produto</label>
+                    <input type="text" id="name" required class="w-full bg-zinc-950 border border-zinc-800 p-3 rounded-lg text-white focus:outline-none focus:border-blue-500 transition">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1 text-gray-400">Preço (R$)</label>
-                    <input type="number" step="0.01" id="price" required class="w-full bg-gray-900 border border-gray-800 p-2 rounded text-white focus:outline-none focus:border-blue-500">
+                    <label class="block text-sm font-medium mb-1 text-zinc-400">Preço (R$)</label>
+                    <input type="number" step="0.01" id="price" required class="w-full bg-zinc-950 border border-zinc-800 p-3 rounded-lg text-white focus:outline-none focus:border-blue-500 transition">
                 </div>
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1 text-gray-400">Descrição Curta</label>
-                <input type="text" id="description" required class="w-full bg-gray-900 border border-gray-800 p-2 rounded text-white focus:outline-none focus:border-blue-500">
+                <label class="block text-sm font-medium mb-1 text-zinc-400">Descrição Curta</label>
+                <input type="text" id="description" required class="w-full bg-zinc-950 border border-zinc-800 p-3 rounded-lg text-white focus:outline-none focus:border-blue-500 transition">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1 text-gray-400">URL da Imagem de Capa</label>
-                <input type="url" id="imageUrl" required class="w-full bg-gray-900 border border-gray-800 p-2 rounded text-white focus:outline-none focus:border-blue-500">
+                <label class="block text-sm font-medium mb-1 text-zinc-400">URL da Imagem de Capa</label>
+                <input type="url" id="imageUrl" required class="w-full bg-zinc-950 border border-zinc-800 p-3 rounded-lg text-white focus:outline-none focus:border-blue-500 transition">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1 text-gray-400">Link de Download (Onde o PDF está hospedado)</label>
-                <input type="url" id="downloadLink" required class="w-full bg-gray-900 border border-gray-800 p-2 rounded text-white focus:outline-none focus:border-blue-500">
+                <label class="block text-sm font-medium mb-1 text-zinc-400">Link de Download (Onde o PDF está hospedado)</label>
+                <input type="url" id="downloadLink" required class="w-full bg-zinc-950 border border-zinc-800 p-3 rounded-lg text-white focus:outline-none focus:border-blue-500 transition">
             </div>
-            <div class="flex gap-4">
-                <button type="submit" id="submit-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 py-2.5 rounded font-bold transition">Cadastrar Produto</button>
-                <button type="button" id="cancel-btn" onclick="resetForm()" class="hidden bg-gray-700 hover:bg-gray-600 px-6 rounded font-bold transition">Cancelar</button>
+            <div class="flex gap-4 pt-2">
+                <button type="submit" id="submit-btn" class="flex-1 bg-blue-600 hover:bg-blue-500 py-3 rounded-lg font-bold transition">Cadastrar Produto</button>
+                <button type="button" id="cancel-btn" onclick="resetForm()" class="hidden bg-zinc-800 hover:bg-zinc-700 px-8 rounded-lg font-bold transition text-zinc-300">Cancelar</button>
             </div>
         </form>
 
-        <h2 class="text-xl font-bold mb-4 text-white">Produtos Cadastrados</h2>
-        <div class="bg-gray-950 border border-gray-800 rounded-lg overflow-hidden">
+        <h2 class="text-xl font-bold mb-4 text-white">Produtos no Catálogo</h2>
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden mb-12 shadow-lg">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="bg-gray-900 text-gray-400 text-sm border-b border-gray-800">
-                        <th class="p-3">Nome</th>
-                        <th class="p-3">Preço</th>
-                        <th class="p-3">Link de Download</th>
-                        <th class="p-3 text-right">Ações</th>
+                    <tr class="bg-zinc-950 text-zinc-400 text-sm border-b border-zinc-800">
+                        <th class="p-4">Nome</th>
+                        <th class="p-4">Preço</th>
+                        <th class="p-4 text-right">Ações</th>
                     </tr>
                 </thead>
-                <tbody id="products-table-body" class="divide-y divide-gray-800 text-sm"></tbody>
+                <tbody id="products-table-body" class="divide-y divide-zinc-800 text-sm"></tbody>
             </table>
         </div>
+
+        <h2 class="text-xl font-bold mb-4 text-white flex items-center gap-2">
+            <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Relatório de Vendas Aprovadas
+        </h2>
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden mb-12 shadow-lg">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-zinc-950 text-zinc-400 text-sm border-b border-zinc-800">
+                        <th class="p-4">Data e Hora</th>
+                        <th class="p-4">E-mail do Cliente</th>
+                        <th class="p-4">Produto(s)</th>
+                        <th class="p-4 text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody id="orders-table-body" class="divide-y divide-zinc-800 text-sm"></tbody>
+            </table>
+        </div>
+
     </div>
 
     <script>
+        // ----------------------------------------------------
+        // SISTEMA DE SENHA E PROTEÇÃO
+        // ----------------------------------------------------
+        let adminPass = sessionStorage.getItem('adminPass');
+        
+        function verificarSenha() {
+            if (!adminPass) {
+                adminPass = prompt("Digite a senha do painel administrador:");
+                if (adminPass) {
+                    sessionStorage.setItem('adminPass', adminPass);
+                } else {
+                    document.body.innerHTML = '<div class="flex items-center justify-center min-h-screen"><h1 class="text-2xl text-red-500 font-bold">Acesso Bloqueado</h1></div>';
+                    document.body.classList.remove('hidden');
+                    return false;
+                }
+            }
+            document.body.classList.remove('hidden');
+            return true;
+        }
+
+        function sair() {
+            sessionStorage.removeItem('adminPass');
+            window.location.reload();
+        }
+
+        // ----------------------------------------------------
+        // LÓGICA DO PAINEL
+        // ----------------------------------------------------
         let currentProducts = [];
+
+        async function loadData() {
+            if(!verificarSenha()) return;
+            await loadTable();
+            await loadOrders();
+        }
 
         async function loadTable() {
             const res = await fetch('/api/products');
             currentProducts = await res.json();
             const tbody = document.getElementById('products-table-body');
             tbody.innerHTML = currentProducts.map(p => `
-                <tr class="hover:bg-gray-900/50 transition">
-                    <td class="p-3 font-medium text-white">${p.name}</td>
-                    <td class="p-3 text-green-400">R$ ${p.price.toFixed(2)}</td>
-                    <td class="p-3 text-gray-400 truncate max-w-xs"><a href="${p.downloadLink}" class="hover:underline text-blue-400" target="_blank">${p.downloadLink}</a></td>
-                    <td class="p-3 text-right space-x-3">
-                        <button onclick="editProduct('${p.id}')" class="text-blue-400 hover:text-blue-300 font-medium">Editar</button>
-                        <button onclick="deleteProduct('${p.id}')" class="text-red-500 hover:text-red-400 font-medium">Deletar</button>
+                <tr class="hover:bg-zinc-800/50 transition">
+                    <td class="p-4 font-medium text-white">${p.name}</td>
+                    <td class="p-4 text-emerald-400 font-bold">R$ ${p.price.toFixed(2).replace('.',',')}</td>
+                    <td class="p-4 text-right space-x-4">
+                        <button onclick="editProduct('${p.id}')" class="text-blue-400 hover:text-blue-300 font-medium transition">Editar</button>
+                        <button onclick="deleteProduct('${p.id}')" class="text-red-500 hover:text-red-400 font-medium transition">Deletar</button>
                     </td>
                 </tr>
             `).join('');
         }
 
+        async function loadOrders() {
+            const res = await fetch('/api/orders', {
+                headers: { 'x-admin-password': adminPass }
+            });
+
+            if (res.status === 401) {
+                alert("Senha incorreta!");
+                sair();
+                return;
+            }
+
+            const orders = await res.json();
+            const tbody = document.getElementById('orders-table-body');
+            
+            if(orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-zinc-500">Nenhuma venda registrada ainda.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = orders.map(o => {
+                const date = new Date(o.createdAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+                
+                let productNames = [];
+                let total = 0;
+                o.items.forEach(i => {
+                    if(i.product) {
+                        productNames.push(i.product.name);
+                        total += i.product.price;
+                    }
+                });
+
+                return `
+                    <tr class="hover:bg-zinc-800/50 transition border-b border-zinc-800/50 last:border-0">
+                        <td class="p-4 text-zinc-400 text-sm whitespace-nowrap">${date}</td>
+                        <td class="p-4 font-medium text-white break-all">${o.customerEmail || 'Não informado'}</td>
+                        <td class="p-4 text-zinc-300">${productNames.join(', ')}</td>
+                        <td class="p-4 text-right text-emerald-400 font-bold whitespace-nowrap">R$ ${total.toFixed(2).replace('.',',')}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Funções de CRUD de Produtos (Enviando a Senha)
         function editProduct(id) {
             const product = currentProducts.find(p => p.id === id);
             if (!product) return;
@@ -88,9 +193,10 @@
             document.getElementById('imageUrl').value = product.imageUrl;
             document.getElementById('downloadLink').value = product.downloadLink;
 
-            document.getElementById('submit-btn').innerText = "Atualizar Produto";
-            document.getElementById('submit-btn').classList.replace('bg-blue-600', 'bg-green-600');
-            document.getElementById('submit-btn').classList.replace('hover:bg-blue-700', 'hover:bg-green-700');
+            const btn = document.getElementById('submit-btn');
+            btn.innerText = "Atualizar Produto";
+            btn.classList.replace('bg-blue-600', 'bg-emerald-600');
+            btn.classList.replace('hover:bg-blue-500', 'hover:bg-emerald-500');
             document.getElementById('cancel-btn').classList.remove('hidden');
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -98,11 +204,15 @@
 
         async function deleteProduct(id) {
             if (confirm("Tem certeza que deseja deletar este produto?")) {
-                const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+                const res = await fetch(`/api/products/${id}`, { 
+                    method: 'DELETE',
+                    headers: { 'x-admin-password': adminPass }
+                });
+                
                 if (res.ok) {
                     loadTable();
                 } else {
-                    alert("Erro ao deletar produto.");
+                    alert("Acesso Negado ou Erro ao deletar.");
                 }
             }
         }
@@ -110,9 +220,10 @@
         function resetForm() {
             document.getElementById('product-form').reset();
             document.getElementById('productId').value = "";
-            document.getElementById('submit-btn').innerText = "Cadastrar Produto";
-            document.getElementById('submit-btn').classList.replace('bg-green-600', 'bg-blue-600');
-            document.getElementById('submit-btn').classList.replace('hover:bg-green-700', 'hover:bg-blue-700');
+            const btn = document.getElementById('submit-btn');
+            btn.innerText = "Cadastrar Produto";
+            btn.classList.replace('bg-emerald-600', 'bg-blue-600');
+            btn.classList.replace('hover:bg-emerald-500', 'hover:bg-blue-500');
             document.getElementById('cancel-btn').classList.add('hidden');
         }
 
@@ -133,7 +244,10 @@
 
             const res = await fetch(endpoint, {
                 method: method,
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-admin-password': adminPass
+                },
                 body: JSON.stringify(productData)
             });
 
@@ -141,11 +255,11 @@
                 resetForm();
                 loadTable();
             } else {
-                alert("Erro ao salvar produto.");
+                alert("Acesso Negado ou Erro ao salvar.");
             }
         });
 
-        window.onload = loadTable;
+        window.onload = loadData;
     </script>
 </body>
 </html>

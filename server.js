@@ -23,7 +23,18 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// Listar produtos
+// Middleware de Segurança do Painel Admin
+const adminAuth = (req, res, next) => {
+    const pass = req.headers['x-admin-password'];
+    if (pass && pass === process.env.ADMIN_PASS) {
+        return next();
+    }
+    res.status(401).json({ error: 'Acesso Negado. Senha incorreta.' });
+};
+
+// ---------------------------------------------------
+// ROTAS DE PRODUTOS
+// ---------------------------------------------------
 app.get('/api/products', async (req, res) => {
     try {
         const products = await prisma.product.findMany();
@@ -33,8 +44,8 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
-// Cadastrar produto
-app.post('/api/products', async (req, res) => {
+// Protegido com senha
+app.post('/api/products', adminAuth, async (req, res) => {
     const { name, description, price, imageUrl, downloadLink } = req.body;
     try {
         const product = await prisma.product.create({
@@ -46,8 +57,8 @@ app.post('/api/products', async (req, res) => {
     }
 });
 
-// Atualizar produto
-app.put('/api/products/:id', async (req, res) => {
+// Protegido com senha
+app.put('/api/products/:id', adminAuth, async (req, res) => {
     const { id } = req.params;
     const { name, description, price, imageUrl, downloadLink } = req.body;
     try {
@@ -61,8 +72,8 @@ app.put('/api/products/:id', async (req, res) => {
     }
 });
 
-// Deletar produto
-app.delete('/api/products/:id', async (req, res) => {
+// Protegido com senha
+app.delete('/api/products/:id', adminAuth, async (req, res) => {
     const { id } = req.params;
     try {
         await prisma.orderItem.deleteMany({ where: { productId: id } });
@@ -73,28 +84,43 @@ app.delete('/api/products/:id', async (req, res) => {
     }
 });
 
-// Criar preferência de checkout (Carrinho)
-app.post('/api/checkout', async (req, res) => {
-    const { items, email } = req.body; // Agora recebe o e-mail de garantia
+// ---------------------------------------------------
+// ROTA DO RELATÓRIO DE VENDAS
+// ---------------------------------------------------
+app.get('/api/orders', adminAuth, async (req, res) => {
+    try {
+        const orders = await prisma.order.findMany({
+            where: { status: 'approved' },
+            orderBy: { createdAt: 'desc' }, // Mais recentes primeiro
+            include: {
+                items: { include: { product: true } }
+            }
+        });
+        res.json(orders);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar relatório de vendas' });
+    }
+});
 
+// ---------------------------------------------------
+// ROTAS DE CHECKOUT E WEBHOOK
+// ---------------------------------------------------
+app.post('/api/checkout', async (req, res) => {
+    const { items, email } = req.body; 
     try {
         const productIds = items.map(i => i.id);
         const dbProducts = await prisma.product.findMany({
             where: { id: { in: productIds } }
         });
 
-        // Cria pedido pendente no banco e já salva o e-mail
         const order = await prisma.order.create({
             data: {
                 status: 'pending',
                 customerEmail: email,
-                items: {
-                    create: dbProducts.map(p => ({ productId: p.id }))
-                }
+                items: { create: dbProducts.map(p => ({ productId: p.id })) }
             }
         });
 
-        // Monta os itens para o Mercado Pago
         const mpItems = dbProducts.map(p => ({
             id: p.id,
             title: p.name,
@@ -108,9 +134,7 @@ app.post('/api/checkout', async (req, res) => {
                 items: mpItems,
                 external_reference: order.id,
                 notification_url: process.env.WEBHOOK_URL,
-                back_urls: {
-                    success: process.env.SUCCESS_URL
-                },
+                back_urls: { success: process.env.SUCCESS_URL },
                 auto_return: 'approved'
             }
         });
@@ -122,10 +146,8 @@ app.post('/api/checkout', async (req, res) => {
     }
 });
 
-// Rota GET apenas para enganar a validação do painel do Mercado Pago
 app.get('/webhook', (req, res) => res.sendStatus(200));
 
-// Webhook do Mercado Pago
 app.post('/webhook', async (req, res) => {
     res.sendStatus(200);
     const { type, data } = req.body;
@@ -143,18 +165,15 @@ app.post('/webhook', async (req, res) => {
                 });
 
                 if (order && order.status !== 'approved') {
-                    // Resgata o e-mail de garantia e o e-mail do Mercado Pago
                     const emailGarantia = order.customerEmail;
                     const emailMP = payment.payer?.email || payment.additional_info?.payer?.email || '';
 
-                    // Mescla os e-mails removendo duplicatas
                     const destinatarios = new Set();
                     if (emailGarantia && emailGarantia.includes('@')) destinatarios.add(emailGarantia);
                     if (emailMP && emailMP.includes('@')) destinatarios.add(emailMP);
 
                     const listaEmails = Array.from(destinatarios).join(', ');
 
-                    // Atualiza status do pedido
                     await prisma.order.update({
                         where: { id: orderId },
                         data: { 
@@ -164,12 +183,8 @@ app.post('/webhook', async (req, res) => {
                         }
                     });
 
-                    if (listaEmails.length === 0) {
-                        console.error(`Pagamento ${data.id} aprovado, mas sem nenhum email vinculado.`);
-                        return;
-                    }
+                    if (listaEmails.length === 0) return;
 
-                    // Monta a lista de links para o email
                     let linksHtml = '';
                     order.items.forEach(item => {
                         linksHtml += `<li><strong>${item.product.name}</strong>: <a href="${item.product.downloadLink}">Clique aqui para baixar</a></li>`;
@@ -177,7 +192,7 @@ app.post('/webhook', async (req, res) => {
 
                     await transporter.sendMail({
                         from: process.env.EMAIL_USER,
-                        to: listaEmails, // Dispara para todos os e-mails encontrados
+                        to: listaEmails, 
                         subject: 'Seus PDFs comprados chegaram!',
                         html: `
                             <h3>Obrigado pela sua compra!</h3>
