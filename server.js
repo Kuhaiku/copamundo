@@ -124,6 +124,7 @@ app.post('/api/checkout', async (req, res) => {
 // Rota GET apenas para enganar a validação do painel do Mercado Pago
 app.get('/webhook', (req, res) => res.sendStatus(200));
 // Webhook do Mercado Pago
+// Webhook do Mercado Pago
 app.post('/webhook', async (req, res) => {
     res.sendStatus(200);
     const { type, data } = req.body;
@@ -134,7 +135,9 @@ app.post('/webhook', async (req, res) => {
 
             if (payment.status === 'approved') {
                 const orderId = payment.external_reference;
-                const customerEmail = payment.payer.email;
+                
+                // Tenta buscar o e-mail em diferentes locais do retorno do Mercado Pago
+                const customerEmail = payment.payer?.email || payment.additional_info?.payer?.email || '';
 
                 const order = await prisma.order.findUnique({
                     where: { id: orderId },
@@ -142,11 +145,21 @@ app.post('/webhook', async (req, res) => {
                 });
 
                 if (order && order.status !== 'approved') {
-                    // Atualiza status do pedido
+                    // Atualiza status do pedido no banco de dados
                     await prisma.order.update({
                         where: { id: orderId },
-                        data: { status: 'approved', paymentId: String(data.id), customerEmail }
+                        data: { 
+                            status: 'approved', 
+                            paymentId: String(data.id), 
+                            customerEmail: customerEmail || 'SEM_EMAIL' 
+                        }
                     });
+
+                    // Se não encontrou o e-mail de jeito nenhum, aborta o envio e avisa no log
+                    if (!customerEmail || customerEmail === '') {
+                        console.error(`⚠️ Pagamento ${data.id} aprovado, mas o MP não forneceu o e-mail do cliente.`);
+                        return;
+                    }
 
                     // Monta a lista de links para o email
                     let linksHtml = '';
@@ -154,6 +167,7 @@ app.post('/webhook', async (req, res) => {
                         linksHtml += `<li><strong>${item.product.name}</strong>: <a href="${item.product.downloadLink}">Clique aqui para baixar</a></li>`;
                     });
 
+                    // Dispara o e-mail
                     await transporter.sendMail({
                         from: process.env.EMAIL_USER,
                         to: customerEmail,
@@ -171,6 +185,12 @@ app.post('/webhook', async (req, res) => {
         }
     }
 });
+
+// Rota GET apenas para enganar a validação do painel do Mercado Pago
+app.get('/webhook', (req, res) => res.sendStatus(200));
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Servidor ativo na porta ${PORT}`));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor ativo na porta ${PORT}`));
